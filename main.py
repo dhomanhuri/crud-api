@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException, Security, Depends
+from fastapi.responses import FileResponse
 from fastapi.security.api_key import APIKeyHeader
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
 import uuid
@@ -38,8 +40,15 @@ db: dict[str, UserOut] = {
     "3": UserOut(id="3", name="Siti", email="siti@example.com", age=22),
 }
 
+# --- Static Files ---
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # --- Routes ---
 @app.get("/")
+def dashboard():
+    return FileResponse("static/index.html")
+
+@app.get("/api")
 def root():
     return {"message": "CRUD User API is running 🚀"}
 

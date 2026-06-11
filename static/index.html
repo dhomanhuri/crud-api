@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRUD User API UI</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #1f2937;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --primary: #38bdf8;
+      --danger: #f87171;
+      --success: #4ade80;
+      --border: #334155;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+
+    h1, h2, h3 { margin-top: 0; }
+    .subtitle { color: var(--muted); margin-top: -8px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+      margin-top: 24px;
+    }
+
+    .card {
+      background: rgba(17, 24, 39, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: var(--muted);
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--text);
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-primary { background: var(--primary); color: #082f49; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-secondary {
+      background: #334155;
+      color: var(--text);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 14px;
+      color: var(--muted);
+      min-height: 20px;
+    }
+
+    .status.success { color: var(--success); }
+    .status.error { color: var(--danger); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    th { color: var(--muted); font-size: 13px; }
+    tr:hover { background: rgba(51, 65, 85, 0.22); }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: #082f49;
+      color: #7dd3fc;
+      font-size: 13px;
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 24px;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>CRUD User API UI</h1>
+    <p class="subtitle">UI sederhana untuk melihat, menambah, mengubah, dan menghapus data user.</p>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Konfigurasi</h2>
+        <label for="apiKey">API Key</label>
+        <input id="apiKey" type="text" placeholder="Masukkan API key" />
+
+        <div class="actions">
+          <button class="btn-primary" id="saveKeyBtn">Simpan Key</button>
+          <button class="btn-secondary" id="loadBtn">Load Users</button>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <hr style="border-color:#334155; margin:20px 0;" />
+
+        <h2 id="formTitle">Tambah User</h2>
+        <label for="name">Nama</label>
+        <input id="name" type="text" placeholder="Nama user" />
+
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="email@example.com" />
+
+        <label for="age">Usia</label>
+        <input id="age" type="number" placeholder="Opsional" />
+
+        <div class="actions">
+          <button class="btn-primary" id="submitBtn">Simpan</button>
+          <button class="btn-secondary" id="resetBtn">Reset</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <div>
+            <h2 style="margin-bottom:6px;">Daftar User</h2>
+            <span class="badge" id="countBadge">0 user</span>
+          </div>
+          <button class="btn-secondary" id="refreshBtn">Refresh</button>
+        </div>
+
+        <div id="tableWrap">
+          <div class="empty">Belum ada data dimuat.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const apiKeyInput = document.getElementById('apiKey');
+    const statusEl = document.getElementById('status');
+    const countBadge = document.getElementById('countBadge');
+    const tableWrap = document.getElementById('tableWrap');
+    const formTitle = document.getElementById('formTitle');
+    const submitBtn = document.getElementById('submitBtn');
+
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const ageInput = document.getElementById('age');
+
+    let editingId = null;
+    let users = [];
+
+    const savedKey = localStorage.getItem('crud_api_key');
+    if (savedKey) apiKeyInput.value = savedKey;
+
+    function setStatus(message, type = '') {
+      statusEl.textContent = message;
+      statusEl.className = `status ${type}`.trim();
+    }
+
+    function getApiKey() {
+      return apiKeyInput.value.trim();
+    }
+
+    function saveApiKey() {
+      const key = getApiKey();
+      localStorage.setItem('crud_api_key', key);
+      setStatus('API key disimpan di browser.', 'success');
+    }
+
+    function resetForm() {
+      editingId = null;
+      formTitle.textContent = 'Tambah User';
+      submitBtn.textContent = 'Simpan';
+      nameInput.value = '';
+      emailInput.value = '';
+      ageInput.value = '';
+    }
+
+    async function request(url, options = {}) {
+      const key = getApiKey();
+      const headers = {
+        ...(options.headers || {}),
+        'X-API-Key': key,
+      };
+
+      const res = await fetch(url, { ...options, headers });
+      if (!res.ok) {
+        let message = 'Request gagal';
+        try {
+          const err = await res.json();
+          message = err.detail || JSON.stringify(err);
+        } catch (_) {}
+        throw new Error(message);
+      }
+
+      if (res.status === 204) return null;
+      return res.json();
+    }
+
+    function renderTable() {
+      countBadge.textContent = `${users.length} user`;
+
+      if (!users.length) {
+        tableWrap.innerHTML = '<div class="empty">Belum ada user.</div>';
+        return;
+      }
+
+      const rows = users.map(user => `
+        <tr>
+          <td>${user.id}</td>
+          <td>${user.name}</td>
+          <td>${user.email}</td>
+          <td>${user.age ?? '-'}</td>
+          <td>
+            <div class="actions">
+              <button class="btn-secondary" onclick="editUser('${user.id}')">Edit</button>
+              <button class="btn-danger" onclick="removeUser('${user.id}')">Hapus</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+
+      tableWrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nama</th>
+              <th>Email</th>
+              <th>Usia</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    async function loadUsers() {
+      if (!getApiKey()) {
+        setStatus('Isi API key dulu ya.', 'error');
+        return;
+      }
+
+      try {
+        setStatus('Mengambil data user...');
+        users = await request('/users');
+        renderTable();
+        setStatus('Data user berhasil dimuat.', 'success');
+      } catch (err) {
+        setStatus(err.message, 'error');
+      }
+    }
+
+    async function submitForm() {
+      if (!getApiKey()) {
+        setStatus('Isi API key dulu ya.', 'error');
+        return;
+      }
+
+      const payload = {
+        name: nameInput.value.trim(),
+        email: emailInput.value.trim(),
+      };
+
+      if (!payload.name || !payload.email) {
+        setStatus('Nama dan email wajib diisi.', 'error');
+        return;
+      }
+
+      if (ageInput.value.trim() !== '') {
+        payload.age = Number(ageInput.value);
+      }
+
+      try {
+        if (editingId) {
+          await request(`/users/${editingId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          setStatus('User berhasil diupdate.', 'success');
+        } else {
+          await request('/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          setStatus('User berhasil ditambahkan.', 'success');
+        }
+
+        resetForm();
+        await loadUsers();
+      } catch (err) {
+        setStatus(err.message, 'error');
+      }
+    }
+
+    window.editUser = function(id) {
+      const user = users.find(item => item.id === id);
+      if (!user) return;
+      editingId = id;
+      formTitle.textContent = `Edit User ${id}`;
+      submitBtn.textContent = 'Update';
+      nameInput.value = user.name;
+      emailInput.value = user.email;
+      ageInput.value = user.age ?? '';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    window.removeUser = async function(id) {
+      if (!confirm(`Hapus user ${id}?`)) return;
+
+      try {
+        await request(`/users/${id}`, { method: 'DELETE' });
+        setStatus(`User ${id} berhasil dihapus.`, 'success');
+        await loadUsers();
+      } catch (err) {
+        setStatus(err.message, 'error');
+      }
+    }
+
+    document.getElementById('saveKeyBtn').addEventListener('click', saveApiKey);
+    document.getElementById('loadBtn').addEventListener('click', loadUsers);
+    document.getElementById('refreshBtn').addEventListener('click', loadUsers);
+    document.getElementById('submitBtn').addEventListener('click', submitForm);
+    document.getElementById('resetBtn').addEventListener('click', resetForm);
+  </script>
+</body>
+</html>

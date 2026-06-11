@@ -1,0 +1,11 @@
+services:
+  crud-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: crud-api
+    ports:
+      - "${HOST_PORT:-8080}:8000"
+    environment:
+      API_KEY: ${API_KEY:-secret-api-key-12345}
+    restart: unless-stopped

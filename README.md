@@ -12,12 +12,60 @@ REST API sederhana untuk manajemen data user, dibangun dengan **FastAPI (Python)
 - FastAPI 0.115.0
 - Uvicorn 0.30.6
 - Docker
+- Docker Compose
 
 ---
 
 ## 🚀 Menjalankan Aplikasi
 
-### Via Docker (recommended)
+### Via Docker Compose (recommended)
+
+1. Copy file environment:
+
+```bash
+cp .env.example .env
+```
+
+2. Sesuaikan nilainya bila perlu:
+
+```env
+API_KEY=your-secret-api-key
+HOST_PORT=8080
+```
+
+3. Jalankan service:
+
+```bash
+docker compose up -d --build
+```
+
+Aplikasi akan tersedia di:
+
+- UI Dashboard: `http://localhost:8080`
+- API info: `http://localhost:8080/api`
+- Swagger UI: `http://localhost:8080/docs`
+
+Untuk menghentikan service:
+
+```bash
+docker compose down
+```
+
+### Catatan port
+
+- Port default host adalah `8080`.
+- Dari pengecekan container yang sedang berjalan, port `8080` saat ini **belum dipakai**, jadi tidak conflict.
+- Jika nanti bentrok, cukup ubah `HOST_PORT` di `.env`, misalnya menjadi `8082`.
+
+Contoh:
+
+```env
+HOST_PORT=8082
+```
+
+Lalu akses aplikasi di `http://localhost:8082`.
+
+### Via Docker
 
 ```bash
 # Build image
@@ -30,11 +78,14 @@ docker run -d --name crud-api \
   crud-api:latest
 ```
 
-### Environment Variables
+---
 
-| Variable  | Default                  | Keterangan          |
-|-----------|--------------------------|---------------------|
-| `API_KEY` | `secret-api-key-12345`   | API Key untuk autentikasi |
+## 🌍 Environment Variables
+
+| Variable    | Default                | Keterangan                         |
+|-------------|------------------------|------------------------------------|
+| `API_KEY`   | `secret-api-key-12345` | API Key untuk autentikasi          |
+| `HOST_PORT` | `8080`                 | Port host untuk expose service     |
 
 ---
 
@@ -42,17 +93,28 @@ docker run -d --name crud-api \
 
 Semua endpoint `/users` membutuhkan header:
 
-```
+```text
 X-API-Key: <your-api-key>
 ```
 
-Endpoint `/` dan `/health` bebas diakses tanpa key.
+Endpoint `/`, `/api`, dan `/health` bebas diakses tanpa key.
 
 ---
 
 ## 📡 Endpoints
 
 ### `GET /`
+Menampilkan UI dashboard sederhana untuk melihat dan mengelola data user.
+
+Buka langsung di browser:
+
+```text
+http://localhost:8080
+```
+
+---
+
+### `GET /api`
 Info aplikasi (tanpa auth).
 
 **Response:**
@@ -94,6 +156,8 @@ curl http://localhost:8080/users \
 ]
 ```
 
+> Jika `HOST_PORT` diubah, sesuaikan port pada URL request.
+
 ---
 
 ### `GET /users/{id}`
@@ -129,11 +193,11 @@ curl -X POST http://localhost:8080/users \
 ```
 
 **Body:**
-| Field   | Type    | Required | Keterangan        |
-|---------|---------|----------|-------------------|
-| `name`  | string  | ✅       | Nama user         |
-| `email` | string  | ✅       | Email user        |
-| `age`   | integer | ❌       | Usia user         |
+| Field   | Type    | Required | Keterangan |
+|---------|---------|----------|------------|
+| `name`  | string  | ✅       | Nama user  |
+| `email` | string  | ✅       | Email user |
+| `age`   | integer | ❌       | Usia user  |
 
 **Response `201`:**
 ```json
@@ -178,27 +242,18 @@ curl -X DELETE http://localhost:8080/users/1 \
 
 ## 📋 HTTP Status Codes
 
-| Code | Keterangan              |
-|------|-------------------------|
-| 200  | OK                      |
-| 201  | Created                 |
+| Code | Keterangan                             |
+|------|----------------------------------------|
+| 200  | OK                                     |
+| 201  | Created                                |
 | 401  | Unauthorized (API Key salah/tidak ada) |
-| 404  | User tidak ditemukan    |
-| 422  | Validation error        |
-
----
-
-## 📖 Swagger UI
-
-Dokumentasi interaktif tersedia di:
-
-```
-http://localhost:8080/docs
-```
+| 404  | User tidak ditemukan                   |
+| 422  | Validation error                       |
 
 ---
 
 ## ⚠️ Catatan
 
-- Data bersifat **in-memory** — akan reset setiap kali container di-restart.
+- Data bersifat **in-memory**, akan reset setiap kali container di-restart.
+- UI dashboard memakai API yang sama dan meminta `API_KEY` untuk load/manipulasi data user.
 - Aplikasi ini adalah **existing service** yang digunakan oleh middleware. Tidak boleh dimodifikasi.
